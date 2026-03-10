@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>stamp.</title>
+<link href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&family=Beth+Ellen&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════
+   RESET
+═══════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #888c96;
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Yuji Syuku', serif;
+}
+
+/* ═══════════════════════════════
+   PHONE SHELL
+═══════════════════════════════ */
+.phone {
+  width: 393px;
+  height: 852px;
+  border-radius: 52px;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  box-shadow:
+    0 60px 140px rgba(0,0,0,0.45),
+    0 0 0 1px rgba(0,0,0,0.15),
+    inset 0 0 0 1px rgba(255,255,255,0.06);
+  background: #2f486d;
+}
+
+/* ═══════════════════════════════
+   SCREENS
+═══════════════════════════════ */
+.screen {
+  position: absolute;
+  inset: 0;
+  width: 393px; /* explicit — no overflow surprises */
+  height: 852px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.38s ease;
+}
+.screen.active {
+  opacity: 1;
+  pointer-events: all;
+}
+.screen.enter {
+  animation: screenIn 0.42s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+@keyframes screenIn {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════
+   PAPER BG  — fills screen exactly
+═══════════════════════════════ */
+.paper-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ═══════════════════════════════
+   STATUS BAR
+═══════════════════════════════ */
+.status-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 56px;
+  z-index: 20;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px 0;
+}
+.status-time {
+  font-family: -apple-system, sans-serif;
+  font-size: 17px; font-weight: 600;
+  color: #2c2c2c; letter-spacing: -0.3px;
+}
+.status-icons { display: flex; gap: 6px; align-items: center; }
+.status-icons img { height: 12px; display: block; }
+.status-icons .s-battery { height: 13px; }
+.status-bar.white .status-time { color: #fff; }
+.status-bar.white .status-icons img { filter: brightness(10); }
+
+/* ═══════════════════════════════
+   OVAL BUTTON — shared
+   Two images: default outline + touchdown filled
+   On press: default fades out, touchdown fades in
+═══════════════════════════════ */
+.oval-btn {
+  position: relative;
+  display: block;
+  cursor: pointer;
+  border: none; background: none; padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+  width: 257px; height: 80px;
+}
+/* Both images sit on top of each other, full size */
+.oval-btn .ob-default,
+.oval-btn .ob-pressed {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  display: block;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+.oval-btn .ob-pressed { opacity: 0; }
+
+/* Label sits above both images */
+.oval-btn .ob-label {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Yuji Syuku', serif;
+  font-size: 18px; color: #2f486d;
+  transition: color 0.15s ease;
+  pointer-events: none; user-select: none;
+  z-index: 1;
+}
+
+/* Pressed state: swap images, white text */
+.oval-btn.pressed .ob-default { opacity: 0; }
+.oval-btn.pressed .ob-pressed  { opacity: 1; }
+.oval-btn.pressed .ob-label    { color: #fff; }
+
+/* ═══════════════════════════════
+   SPLASH
+═══════════════════════════════ */
+#splash { background: #2f486d; }
+
+.splash-logo {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 156px;
+  opacity: 0;
+  animation: splashIn 1s cubic-bezier(0.22,1,0.36,1) 0.35s forwards;
+}
+@keyframes splashIn {
+  from { opacity: 0; transform: translate(-50%, calc(-50% + 8px)) scale(0.94); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* ═══════════════════════════════
+   MAIN
+═══════════════════════════════ */
+/* stamp. logo — centered */
+.main-logo {
+  position: absolute;
+  top: 16.8%; /* ~143px / 852px */
+  left: 0; right: 0;
+  text-align: center;
+  pointer-events: none;
+}
+.main-logo img {
+  width: 108px;
+  opacity: 0;
+  animation: fadeUp 0.7s ease 0.15s forwards;
+}
+
+/* handwriting — left: calc(20% + 27.73px) on 393px = ~106px */
+.main-handwriting {
+  position: absolute;
+  top: 29.1%;
+  left: calc(20% + 28px); /* exact Figma value */
+  width: 175px;
+  opacity: 0;
+  animation: fadeUp 0.8s ease 0.35s forwards;
+}
+.main-underline {
+  position: absolute;
+  top: 44.1%; /* ~376px / 852px */
+  left: calc(20% + 30px);
+  width: 183px;
+  opacity: 0;
+  animation: fadeUp 0.8s ease 0.45s forwards;
+}
+
+/* tagline — centered, full width with padding */
+.main-tagline {
+  position: absolute;
+  top: 65.4%; /* ~557px / 852px */
+  left: 0; right: 0;
+  padding: 0 28px;
+  text-align: center;
+  color: #2f486d;
+  font-size: 20px;
+  line-height: 28px;
+  opacity: 0;
+  animation: fadeUp 0.7s ease 0.55s forwards;
+}
+
+/* begin button — centered */
+.main-btn {
+  position: absolute;
+  bottom: 52px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 257px; height: 80px;
+  opacity: 0;
+  animation: fadeUp 0.6s ease 0.75s forwards;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+/* btn-wrap needs translateX(-50%) preserved */
+.main-btn { animation: fadeUpBtn 0.6s ease 0.75s forwards; }
+@keyframes fadeUpBtn {
+  from { opacity: 0; transform: translateX(-50%) translateY(14px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ═══════════════════════════════
+   PAGE EMPTY
+═══════════════════════════════ */
+/* Title + pencil */
+.page-header {
+  position: absolute;
+  top: 72px; left: 20px; right: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.page-title-group {
+  display: flex; align-items: center; gap: 8px;
+}
+.page-title {
+  font-family: 'Beth Ellen', cursive;
+  font-size: 22px; color: #2f486d;
+  outline: none;
+  border-bottom: 1.5px solid transparent;
+  transition: border-color 0.2s;
+  caret-color: #2f486d;
+  max-width: 240px;
+}
+.page-title:focus { border-color: rgba(47,72,109,0.3); }
+.edit-btn {
+  background: none; border: none; padding: 4px;
+  cursor: pointer; opacity: 0.5;
+  display: flex; align-items: center;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+.edit-btn:active { opacity: 1; }
+.edit-btn svg { width: 22px; height: 22px; display: block; }
+
+/* settings button — kółko (outer) + zębatka (inner) z Figmy */
+.settings-btn {
+  width: 39px; height: 41px;
+  background: none; border: none; padding: 0;
+  cursor: pointer; flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.15s;
+  display: block;
+}
+.settings-btn:active { opacity: 0.6; }
+.settings-btn svg { display: block; width: 39px; height: 41px; }
+.s-icon-outer, .s-icon-inner { display: none; }
+
+/* empty state */
+.empty-text {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex; align-items: center; justify-content: center;
+  text-align: center;
+  color: #2f486d;
+  font-size: 20px; line-height: 28px;
+  pointer-events: none;
+  opacity: 0;
+  animation: fadeUp 0.6s ease 0.2s forwards;
+}
+
+/* stamps grid */
+.stamps-grid {
+  position: absolute;
+  top: 130px; left: 16px; right: 16px; bottom: 140px;
+  display: none;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-content: flex-start;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.stamps-grid::-webkit-scrollbar { display: none; }
+.stamp-card {
+  width: calc(50% - 5px);
+  aspect-ratio: 1;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 2px 12px rgba(47,72,109,0.12);
+  animation: stampPop 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes stampPop {
+  from { opacity: 0; transform: scale(0.78) rotate(-4deg); }
+  to   { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+.stamp-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.stamp-date {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: linear-gradient(transparent, rgba(47,72,109,0.5));
+  padding: 14px 8px 5px;
+  font-size: 10px; color: #fff;
+  letter-spacing: 0.06em; text-align: center;
+}
+
+/* page bottom btn */
+.page-btn {
+  position: absolute;
+  bottom: 52px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 257px; height: 80px;
+}
+
+/* ═══════════════════════════════
+   SETTINGS PANEL (overlay)
+═══════════════════════════════ */
+#settings-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.28s ease;
+}
+#settings-overlay.open {
+  pointer-events: all;
+  opacity: 1;
+}
+
+.settings-dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(47, 72, 109, 0.20);
+  cursor: pointer;
+}
+
+/* Card wrapper — slides in, NO filter here (would distort text) */
+.settings-card-wrap {
+  position: absolute;
+  top: 120px; left: 16px; right: 16px;
+  transform: translateY(-18px) scale(0.97);
+  opacity: 0;
+  transition: transform 0.38s cubic-bezier(0.22,1,0.36,1), opacity 0.28s ease;
+}
+#settings-overlay.open .settings-card-wrap {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+/* The white card — torn effect via ::before pseudo-element
+   CSS filter only applies to that layer, text children are unaffected */
+.settings-card {
+  background: #fff;
+  border-radius: 9px;
+  position: relative;
+  isolation: isolate;
+  box-shadow: 0 4px 24px rgba(47,72,109,0.13);
+}
+/* Torn paper background layer — filter ONLY distorts this shape, not the text */
+.settings-card::before {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  background: #fff;
+  border-radius: 10px;
+  z-index: -1;
+  filter: url(#torn-paper);
+}
+
+/* Settings rows */
+.settings-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px 16px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.14s;
+  position: relative;
+}
+.settings-row:active { background: rgba(47,72,109,0.04); }
+.settings-row + .settings-row::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 20px; right: 20px;
+  height: 1px;
+  background: rgba(47,72,109,0.13);
+}
+.settings-row h3 {
+  font-size: 20px; color: #2f486d;
+  font-weight: 400; line-height: 30px;
+}
+.settings-row p {
+  font-size: 11px;
+  color: rgba(47,72,109,0.7);
+  margin-top: -3px;
+  letter-spacing: 0.02em;
+}
+.row-text { flex: 1; }
+
+/* Toggle */
+.toggle {
+  flex-shrink: 0;
+  margin-top: 7px;
+  width: 52px; height: 28px;
+  border-radius: 999px;
+  background: #a7ae89;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.28s;
+  -webkit-tap-highlight-color: transparent;
+}
+.toggle.off { background: rgba(47,72,109,0.18); }
+.toggle-knob {
+  position: absolute;
+  top: 3px; right: 3px;
+  width: 22px; height: 22px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.22);
+  transition:
+    right 0.26s cubic-bezier(0.34,1.56,0.64,1),
+    left  0.26s cubic-bezier(0.34,1.56,0.64,1);
+}
+.toggle.off .toggle-knob { right: auto; left: 3px; }
+
+
+/* ═══════════════════════════════
+   PHOTO SCREEN
+═══════════════════════════════ */
+#photo .photo-title {
+  position: absolute;
+  top: 155px; left: 0; right: 0;
+  text-align: center;
+  font-family: 'Beth Ellen', cursive;
+  font-size: 24px; color: #2f486d;
+  pointer-events: none;
+  opacity: 0;
+  animation: fadeUp 0.5s ease 0.1s forwards;
+}
+#photo .close-btn {
+  position: absolute;
+  top: 64px; right: 22px;
+  background: none; border: none; padding: 4px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.15s;
+  z-index: 10;
+}
+#photo .close-btn:active { opacity: 0.5; }
+#photo .close-btn svg { display: block; width: 33px; height: 33px; }
+
+/* Camera viewfinder — wyśrodkowany, powyżej przycisku */
+#photo .viewfinder {
+  position: absolute;
+  top: 210px;
+  left: 20px; right: 20px;
+  height: 353px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #1a1a1a;
+  opacity: 0;
+  animation: fadeUp 0.5s ease 0.2s forwards;
+}
+#photo .viewfinder video {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+#photo .viewfinder .cam-fallback {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 12px;
+  color: rgba(255,255,255,0.5);
+  font-size: 14px; text-align: center; padding: 20px;
+}
+#photo .viewfinder .cam-fallback svg {
+  width: 48px; height: 48px; opacity: 0.4;
+}
+
+/* Shutter button — pod viewfinderem */
+#photo .shutter-wrap {
+  position: absolute;
+  bottom: 72px; left: 0; right: 0;
+  display: flex; justify-content: center;
+  opacity: 0;
+  animation: fadeUp 0.5s ease 0.3s forwards;
+}
+#photo .shutter-btn {
+  width: 110px; height: 110px;
+  background: none; border: none; padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  transition: transform 0.12s ease;
+}
+#photo .shutter-btn:active { transform: scale(0.92); }
+#photo .shutter-btn svg { display: block; width: 110px; height: 110px; }
+
+/* Inner circle expand animation on press */
+#photo .shutter-btn .shutter-inner {
+  position: absolute;
+  /* inner circle = Ellipse2, 8.18% inset from 110px = ~9px each side → 92px */
+  top: 9px; left: 9px; right: 9px; bottom: 9px;
+  border-radius: 50%;
+  background: #2f486d;
+  transform: scale(1);
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+}
+#photo .shutter-btn:active .shutter-inner {
+  transform: scale(1.13);
+}
+
+/* Flash effect */
+.flash-overlay {
+  position: absolute; inset: 0;
+  background: white;
+  opacity: 0; pointer-events: none;
+  z-index: 100;
+  transition: opacity 0.08s ease;
+}
+.flash-overlay.flash { opacity: 1; }
+
+/* ═══════════════════════════════
+   EDIT SCREEN
+═══════════════════════════════ */
+#edit .edit-preview {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, calc(-50% - 101px));
+  width: 278px; height: 278px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: #ccc;
+}
+#edit .edit-preview img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: filter 0.12s ease;
+}
+
+/* Filter label */
+#edit .filter-label {
+  position: absolute;
+  top: 531px; left: 0; right: 0;
+  text-align: center;
+  font-family: 'Yuji Syuku', serif;
+  font-size: 17px; color: #2f486d;
+  pointer-events: none;
+}
+
+/* Filter icons carousel */
+#edit .filter-row-wrap {
+  position: absolute;
+  top: 548px; left: 0; right: 0;
+  overflow: hidden;
+  height: 80px;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#edit .filter-row-wrap:active { cursor: grabbing; }
+#edit .filter-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: transform;
+  padding: 9px calc(50% - 31px);
+  box-sizing: border-box;
+  pointer-events: none; /* let wrap handle drag, buttons handle tap */
+}
+.filter-icon-btn {
+  width: 62px; height: 62px;
+  background: none; border: none; padding: 0;
+  cursor: pointer; position: relative;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+  pointer-events: all;
+  transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1),
+              opacity 0.25s ease;
+}
+.filter-icon-btn img {
+  width: 62px; height: 62px;
+  display: block;
+}
+.filter-icon-btn.active   { transform: scale(1);    opacity: 1; }
+.filter-icon-btn.inactive { transform: scale(0.72); opacity: 0.4; }
+
+/* Filter label */
+#edit .filter-label {
+  position: absolute;
+  top: 522px; left: 0; right: 0;
+  text-align: center;
+  font-family: 'Yuji Syuku', serif;
+  font-size: 17px; color: #2f486d;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
+/* ── TICKS SLIDER ─────────────────── */
+#edit .slider-wrap {
+  position: absolute;
+  top: 640px; left: 0; right: 0;
+  height: 33px;
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#edit .slider-wrap:active { cursor: grabbing; }
+
+/* scrolling ticks — 3 copies of the 393px SVG side by side */
+#edit .ticks-track {
+  position: absolute;
+  top: 0; left: 0;
+  display: flex;
+  flex-direction: row;
+  width: 1179px; /* 3 × 393 */
+  will-change: transform;
+}
+#edit .ticks-track svg {
+  display: block;
+  flex-shrink: 0;
+  width: 393px;
+}
+
+/* fixed center marker */
+#edit .ticks-center {
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 2;
+}
+#edit .ticks-center svg { display: block; }
+
+/* value bubble */
+#edit .ticks-value {
+  position: absolute;
+  top: -22px; left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Yuji Syuku', serif;
+  font-size: 12px; color: #2f486d;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+#edit .ticks-value.visible { opacity: 1; }
+
+/* Bottom nav: ← → */
+#edit .edit-nav {
+  position: absolute;
+  bottom: 57px; left: 0; right: 0;
+  display: flex; justify-content: space-between;
+  padding: 0 20px;
+  align-items: center;
+}
+.edit-nav-btn {
+  width: 72px; height: 70px;
+  background: none; border: none; padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  transition: opacity 0.15s;
+}
+.edit-nav-btn:active { opacity: 0.6; }
+.edit-nav-btn img {
+  width: 72px; height: 70px;
+  display: block;
+}
+
+/* ═══════════════════════════════
+   LOADING OVERLAY
+═══════════════════════════════ */
+#loading {
+  position: fixed; inset: 0;
+  background: #2f486d;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 9999; gap: 18px;
+  transition: opacity 0.6s ease;
+}
+#loading.hidden { opacity: 0; pointer-events: none; }
+.ld-logo {
+  font-family: 'Courier New', monospace;
+  font-size: 22px; letter-spacing: 0.22em;
+  color: rgba(255,255,255,0.9);
+}
+.ld-dots { display: flex; gap: 6px; }
+.ld-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(255,255,255,0.45);
+  animation: dotPulse 1.4s ease-in-out infinite;
+}
+.ld-dot:nth-child(2) { animation-delay: 0.2s; }
+.ld-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotPulse {
+  0%,80%,100% { opacity: 0.2; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1); }
+}
+
+input[type="file"] { display: none; }
+</style>
+</head>
+<body>
+
+<!-- SVG filter definitions — torn paper effect -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <filter id="grain-filter" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGBLinear">
+      <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" result="noise"/>
+      <feColorMatrix type="saturate" values="0" in="noise" result="grayNoise"/>
+      <feBlend in="SourceGraphic" in2="grayNoise" mode="overlay" result="blended"/>
+      <feComposite in="blended" in2="SourceGraphic" operator="in"/>
+    </filter>
+    <filter id="torn-paper" x="-4%" y="-4%" width="108%" height="108%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.065" numOctaves="4" seed="3" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+</svg>
+
+<!-- Loading -->
+<div id="loading">
+  <div class="ld-logo">stamp.</div>
+  <div class="ld-dots">
+    <div class="ld-dot"></div><div class="ld-dot"></div><div class="ld-dot"></div>
+  </div>
+</div>
+
+<div class="phone">
+
+  <!-- ════════════════ SPLASH ════════════════ -->
+  <div class="screen active" id="splash">
+    <div class="status-bar white">
+      <span class="status-time">9:41</span>
+      <div class="status-icons">
+        <img data-key="cellular_w" src="" alt="">
+        <img data-key="wifi_w" src="" alt="">
+        <img data-key="battery_w" src="" class="s-battery" alt="">
+      </div>
+    </div>
+    <img data-key="splash_logo" src="" alt="stamp." class="splash-logo">
+  </div>
+
+  <!-- ════════════════ MAIN ════════════════ -->
+  <div class="screen" id="main">
+    <img data-key="paper_main" src="" alt="" class="paper-bg">
+    <div class="status-bar">
+      <span class="status-time">9:41</span>
+      <div class="status-icons">
+        <img data-key="cellular" src="" alt="">
+        <img data-key="wifi" src="" alt="">
+        <img data-key="battery" src="" class="s-battery" alt="">
+      </div>
+    </div>
+
+    <div class="main-logo">
+      <img data-key="logo" src="" alt="stamp.">
+    </div>
+
+    <img data-key="handwriting" src="" alt="one small moment a day." class="main-handwriting">
+    <img data-key="underline"   src="" alt="" class="main-underline">
+
+    <div class="main-tagline">
+      A quiet place<br>for small things you notice.<br>One stamp a day.<br><br>No feed. No likes. No pressure
+    </div>
+
+    <div class="oval-btn main-btn" id="btn-begin">
+      <img data-key="btn_circle"    src="" alt="" class="ob-default">
+      <img data-key="btn_circle_td" src="" alt="" class="ob-pressed">
+      <span class="ob-label">Begin</span>
+    </div>
+  </div>
+
+  <!-- ════════════════ PAGE ════════════════ -->
+  <div class="screen" id="page">
+    <img data-key="paper_page" src="" alt="" class="paper-bg">
+    <div class="status-bar">
+      <span class="status-time">9:41</span>
+      <div class="status-icons">
+        <img data-key="cellular" src="" alt="">
+        <img data-key="wifi" src="" alt="">
+        <img data-key="battery" src="" class="s-battery" alt="">
+      </div>
+    </div>
+
+    <div class="page-header">
+      <div class="page-title-group">
+        <span
+          id="page-title"
+          class="page-title"
+          contenteditable="false"
+          spellcheck="false"
+        >favourite things</span>
+        <button class="edit-btn" onclick="toggleTitleEdit()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"> <path fill-rule="evenodd" clip-rule="evenodd" d="M20.3139 5.90932L20.6991 5.59037C20.8487 5.77932 20.849 6.0567 20.6905 6.23823L20.3139 5.90932Z" fill="#2F486D"/> <path fill-rule="evenodd" clip-rule="evenodd" d="M18.6186 3.6445L18.6095 3.63814C18.4058 3.49778 18.1302 3.5274 17.961 3.70781C17.5454 4.15095 17.1613 4.5153 16.773 4.88363L16.6173 5.0315C16.1768 5.45026 15.73 5.88361 15.2508 6.43271C15.0903 6.61666 14.9208 6.8164 14.7467 7.02156C14.2498 7.60707 13.7155 8.23671 13.2454 8.66915C11.9617 9.85016 10.6909 10.9342 9.40512 12.0311C8.48481 12.8162 7.55672 13.6079 6.61082 14.4463C5.88471 15.0899 5.40423 15.6723 4.94976 16.2469C4.89669 16.314 4.8441 16.3808 4.7916 16.4475C4.39493 16.9514 4.00352 17.4487 3.45012 18.01C3.37531 18.0859 3.32574 18.1903 3.31041 18.2958L3.30801 18.3128L3.29947 18.3756C3.29231 18.4293 3.28248 18.5058 3.27158 18.5985C3.24986 18.7834 3.22355 19.0353 3.20592 19.3001C3.18847 19.5621 3.17856 19.8499 3.19293 20.102C3.20009 20.2276 3.21392 20.3573 3.24035 20.4767C3.26414 20.5841 3.30966 20.7397 3.41458 20.8718C3.4935 20.9711 3.58888 21.0242 3.64913 21.0518C3.71392 21.0815 3.77823 21.0999 3.83167 21.112C3.9383 21.1363 4.05602 21.1478 4.16605 21.1536C4.3894 21.1655 4.65537 21.1573 4.90011 21.1431C5.14809 21.1287 5.38869 21.1072 5.56631 21.0895C5.65541 21.0806 5.72932 21.0726 5.78121 21.0668L5.8418 21.0598L5.86447 21.0571C5.97011 21.0443 6.06889 20.998 6.14644 20.9252C9.15915 18.0944 12.2709 15.0233 15.1825 12.1116C15.7567 11.5375 16.3561 10.8933 16.946 10.2593C17.5391 9.62198 18.1234 8.994 18.6793 8.43819C19.0395 8.07796 19.5446 7.52496 19.9541 7.06875C20.1601 6.83924 20.344 6.6318 20.4765 6.48173C20.5427 6.40668 20.5961 6.34592 20.633 6.30387L20.6905 6.23823L20.3139 5.90932L20.6991 5.59037L20.6811 5.56784C20.6655 5.54847 20.6431 5.52068 20.6151 5.48632C20.5592 5.41768 20.4805 5.32237 20.3893 5.21527C20.2104 5.00509 19.9706 4.73455 19.7565 4.53362C19.5382 4.3287 19.247 4.10262 19.0212 3.93456C18.9061 3.84892 18.8038 3.77527 18.7302 3.72295C18.6933 3.69676 18.6635 3.67583 18.6428 3.66132L18.6186 3.6445ZM3.80617 18.361C3.31137 18.2891 3.31041 18.2958 3.31041 18.2958L3.80617 18.361ZM16.9296 6.1183L16.9484 6.13724C17.1263 6.31647 17.3096 6.49947 17.3723 6.5577C17.5276 6.70192 17.847 6.98855 18.1316 7.24253L18.3 7.39273C18.5886 7.08797 18.9191 6.72476 19.2099 6.40081C19.3798 6.21146 19.5347 6.03718 19.6575 5.89836L19.6279 5.86351C19.4534 5.65855 19.2434 5.42351 19.0722 5.26274C18.8975 5.09879 18.6444 4.90069 18.4241 4.73679L18.3864 4.70876C18.0632 5.03821 17.7566 5.32907 17.4606 5.60977L17.3063 5.7562C17.1798 5.87655 17.0546 5.99633 16.9296 6.1183Z" fill="#2F486D"/> </svg>
+        </button>
+      </div>
+
+      <!-- Settings icon — inline SVG z Figmy -->
+      <button class="settings-btn" onclick="openSettings()">
+        <svg width="41" height="42" viewBox="0 0 41 42" fill="none" xmlns="http://www.w3.org/2000/svg"> <path d="M10.6615 4.69417C10.0671 5.14463 9.09089 5.89555 8.3306 6.58007C8.18716 6.70445 8.04763 6.84737 7.92942 6.97604C7.91817 6.98835 7.90722 7.0004 7.89613 7.01269C7.7519 7.17224 7.61947 7.33421 7.46731 7.53166C7.20722 7.87227 6.88153 8.3162 6.37853 9.0921C6.17489 9.40902 5.93624 9.76936 5.66083 10.1838C5.38747 10.6254 5.11649 11.0631 4.88055 11.4891C4.77778 11.6752 4.68191 11.8601 4.60541 12.0319C4.29563 12.7083 3.96148 13.1849 3.73692 13.6713C3.3827 14.4232 3.0652 15.2265 2.82735 16.0126C2.49556 17.3558 2.2685 19.0125 1.93229 20.5611C1.71022 22.0784 1.77952 24.0243 1.84629 25.7711C1.86383 26.1845 1.98921 26.6468 2.15806 27.1245C2.18149 27.1869 2.20624 27.251 2.23176 27.3157C2.45977 27.8935 2.76315 28.5571 3.03362 29.2224C3.32825 29.9494 3.6628 30.6221 3.92364 31.1458C4.07725 31.4549 4.22324 31.7407 4.35894 32.0075C4.73881 32.754 5.10446 33.2807 5.44163 33.7219C5.71619 34.0625 6.01201 34.3855 6.32836 34.7197C6.33975 34.7318 6.3511 34.7438 6.36246 34.7559C7.03602 35.469 7.76339 36.152 8.5179 36.7719C9.2386 37.3548 9.97433 37.9823 10.675 38.4011C11.4575 38.8401 12.3366 39.1381 13.2649 39.5097C14.1829 39.9062 15.2645 40.0019 16.3634 40.187C16.4107 40.1946 16.4589 40.2023 16.5078 40.2102C17.2356 40.3341 18.0276 40.2855 18.8697 40.3228C19.4137 40.3454 19.9478 40.3541 20.483 40.339C21.6161 40.3242 22.6249 40.1076 23.8086 39.854C23.9373 39.8302 24.0632 39.8004 24.1913 39.7643C24.843 39.5569 25.5167 39.2454 26.1341 38.9978C26.1881 38.9756 26.2389 38.9548 26.2927 38.9329C27.0706 38.6112 27.7747 38.2856 28.3602 38.0275C29.3146 37.6044 30.3571 37.1493 31.3102 36.7273C31.8485 36.4886 32.3443 36.2473 32.7114 35.9993C32.8762 35.8885 33.0166 35.7751 33.1546 35.6524C33.2571 35.5564 33.3649 35.4503 33.4799 35.341C34.1442 34.7078 34.7581 34.0046 35.341 33.2723C35.3915 33.2204 35.4426 33.1678 35.4947 33.1137C35.6699 32.9323 35.8484 32.7315 36.0368 32.5063C36.5398 31.9001 37.1333 31.1212 37.8354 30.0257C37.9537 29.8383 38.0748 29.6397 38.1901 29.4337C38.4591 28.9502 38.6911 28.3219 38.9049 27.603C39.0957 26.9498 39.203 26.6113 39.2947 26.3359C39.3212 26.2546 39.3458 26.1777 39.3686 26.1007C39.3957 26.0088 39.4175 25.9142 39.4359 25.8163C39.4708 25.63 39.4908 25.4332 39.504 25.2136C39.5251 24.8706 39.5295 24.4632 39.5766 23.9511C39.5888 23.8186 39.6032 23.6798 39.6203 23.5339C39.8631 21.2835 39.6782 20.2749 39.5672 19.5376C39.531 19.3213 39.4952 19.1255 39.4623 18.9305C39.4522 18.8707 39.4418 18.8087 39.4314 18.7482C39.321 18.1265 39.1961 17.2682 39.1296 16.6102C39.1137 16.458 39.0875 16.2669 39.0547 16.0512C38.9757 15.4983 38.7343 14.7794 38.4739 14.2229C38.3423 13.937 38.1691 13.5451 37.934 13.0977C37.7024 12.6588 37.399 12.1315 37.0463 11.6827C37.0305 11.663 37.0145 11.6432 36.9983 11.6233C35.9308 10.3235 35.3188 9.64959 34.8438 9.09986C34.7637 9.00813 34.6874 8.92092 34.6115 8.83415C34.5587 8.77378 34.5067 8.71488 34.4548 8.65657C34.0569 8.2087 33.5549 7.66238 33.0247 7.13201C32.3923 6.49753 31.7164 5.8863 31.1873 5.48002C31.0647 5.37738 30.9376 5.27516 30.8188 5.18648C29.7948 4.40776 28.771 3.78578 27.6421 2.915C27.3775 2.69372 27.1013 2.49421 26.8076 2.31353C26.4535 2.09338 26.0891 1.90382 25.704 1.67015L25.7693 1.69956C25.4126 1.52967 25.1616 1.36041 24.922 1.20683L24.9559 1.22092C24.885 1.17947 24.8106 1.13817 24.739 1.09772C24.1617 0.778699 23.838 0.520026 23.8889 0.361827C23.9386 0.206503 24.338 0.155508 25.0244 0.253786C25.1118 0.267169 25.203 0.2833 25.3008 0.30531L25.3275 0.316419C25.6056 0.394105 25.9169 0.510256 26.197 0.590708L26.2507 0.614902C26.61 0.761748 27.0544 0.942975 27.4767 1.18909C27.8287 1.3922 28.1672 1.62249 28.4859 1.87461C29.4331 2.56741 30.6149 3.26292 31.6636 4.0218C31.8764 4.17336 32.0699 4.32634 32.2612 4.48341C33.5261 5.53714 34.64 6.70327 35.685 7.9374C36.1597 8.50088 36.6334 9.06628 37.1017 9.64094C37.4342 10.0493 37.764 10.4618 38.0872 10.8847C38.8025 11.8748 39.3137 12.867 39.7366 13.9648C39.7992 14.1309 39.8581 14.2988 39.913 14.469C40.0745 14.9192 40.2074 15.387 40.2924 15.8595C40.4505 16.7264 40.6088 17.5261 40.7232 18.1703C40.7462 18.3014 40.7672 18.4282 40.7855 18.5549C40.8741 19.2013 40.8841 19.6797 40.8937 20.1053C40.9 20.4544 40.8996 20.7633 40.9082 21.075C40.9127 21.2422 40.9188 21.4713 40.9218 21.747C40.9283 22.3414 40.919 23.1573 40.8493 24.0515C40.8011 24.666 40.7411 25.3746 40.5863 26.05C40.5498 26.2158 40.5112 26.3821 40.471 26.5462C40.285 27.3005 40.0273 28.1703 39.6824 28.9925C39.5367 29.3374 39.3755 29.6742 39.1852 29.9906C38.7502 30.6989 38.3419 31.243 38.1188 31.5836C37.7682 32.1123 37.3575 32.6669 36.9378 33.1992C36.6922 33.5108 36.4406 33.8194 36.1956 34.1079C35.5654 34.854 34.9659 35.4701 34.6347 35.8351C34.5183 35.9642 34.4023 36.0838 34.2813 36.2003C34.0221 36.4498 33.6893 36.7764 33.204 37.0677C32.8214 37.301 32.3648 37.5216 31.7899 37.776C31.6611 37.8328 31.5248 37.8931 31.381 37.9569C30.4967 38.3484 29.8614 38.6028 29.3205 38.8173C28.5579 39.118 27.9862 39.3429 27.1421 39.7229C26.9859 39.7927 26.8281 39.8615 26.6672 39.9285C25.8782 40.2502 25.1181 40.6042 24.365 40.794C24.2472 40.8226 24.1224 40.8493 23.9933 40.872C23.7203 40.9194 23.4218 40.9884 23.1012 41.0583C22.5039 41.1921 21.8402 41.2943 21.245 41.3203C20.753 41.3436 20.3495 41.3191 19.996 41.2924C19.8838 41.284 19.7807 41.2751 19.6769 41.2666C19.3959 41.264 19.1155 41.2569 18.8331 41.2463C18.7345 41.2425 18.6357 41.2398 18.5366 41.2379C18.4766 41.2417 18.413 41.2463 18.347 41.2513C18.014 41.2742 17.6017 41.3208 17.0566 41.3076C16.8144 41.3008 16.5766 41.2801 16.3461 41.2457C15.8029 41.1646 15.2949 41.0814 14.7512 40.9786C14.1824 40.8702 13.5515 40.729 12.8809 40.4586C12.8653 40.4524 12.8494 40.4462 12.8331 40.4399C12.4065 40.275 11.8818 40.1066 11.3656 39.9109C10.9416 39.7509 10.5191 39.572 10.1447 39.3735C9.81858 39.197 9.57485 39.0218 9.3696 38.8695C9.19989 38.7418 9.06746 38.6174 8.9381 38.4939C8.93755 38.4934 8.937 38.4928 8.93645 38.4922C8.92767 38.4838 8.91881 38.4754 8.91007 38.467C8.54289 38.1934 8.18441 37.9133 7.82977 37.6384C7.11314 37.079 6.44036 36.4862 5.79111 35.8565C5.70382 35.7766 5.61606 35.6949 5.52989 35.6134C5.52095 35.6049 5.51202 35.5965 5.50309 35.588C5.4911 35.5767 5.47907 35.5653 5.46706 35.5539C5.07531 35.1868 4.6944 34.8036 4.44309 34.5485C4.17519 34.2821 3.58739 33.5727 3.09212 32.6988C3.05382 32.6321 3.01548 32.5653 2.9769 32.498C2.63998 31.9115 2.29172 31.2866 2.02275 30.7593C1.86498 30.4518 1.75138 30.1416 1.64365 29.8217C1.64032 29.8118 1.63698 29.8018 1.63364 29.7919C1.54317 29.5183 1.44504 29.2374 1.312 28.9371C1.24314 28.7815 1.16278 28.6148 1.07731 28.4342C1.00211 28.2751 0.922729 28.1049 0.845042 27.921C0.774798 27.7488 0.626536 27.3628 0.494457 26.8081C0.430942 26.5339 0.374214 26.2151 0.359416 25.8626C0.356705 25.7899 0.353834 25.712 0.351286 25.6376C0.283024 24.6366 0.24038 23.6395 0.230416 22.6324C0.212831 22.4217 0.191555 22.239 0.164063 22.0925C0.144346 21.9874 0.120554 21.8989 0.0967808 21.8048C0.0644585 21.6792 0.0315933 21.5468 0.0109445 21.3635C-0.00512666 21.2181 -0.00351942 21.0502 0.0158907 20.9317C0.0246793 20.8789 0.037001 20.8361 0.048237 20.7985C0.0611135 20.7555 0.0727695 20.7174 0.0779999 20.6675C0.0817897 20.6315 0.079504 20.5967 0.078178 20.5471C0.0763348 20.4699 0.071537 20.3758 0.104311 20.2044C0.105385 20.199 0.106473 20.1935 0.107575 20.188C0.196053 19.7461 0.294906 19.2335 0.3891 18.728C0.494804 18.1605 0.59557 17.6005 0.671055 17.1493C0.747916 16.7181 0.838184 16.1911 1.04415 15.4914C1.08362 15.3695 1.125 15.2481 1.16767 15.1277C1.34737 14.621 1.54976 14.1329 1.72908 13.7156C1.84473 13.4466 1.96087 13.1703 2.08423 12.8923C2.1525 12.7391 2.22359 12.5904 2.29475 12.4483C2.53865 11.9651 2.76769 11.5667 2.91065 11.2802C2.91762 11.2659 2.92466 11.2517 2.93177 11.2376C2.97678 11.1482 3.05162 11.0494 3.14604 10.9337C3.21325 10.8511 3.29023 10.7603 3.37398 10.657C3.64958 10.1601 3.9388 9.69998 4.22557 9.24366C4.2327 9.22585 4.24011 9.20748 4.24751 9.18901C4.2476 9.18871 4.2477 9.1884 4.24779 9.1881C4.36544 8.89361 4.51431 8.52523 4.76131 8.09765C4.8695 7.91077 4.99943 7.71253 5.15674 7.50721C5.2934 7.32903 5.39809 7.22943 5.49256 7.14021C5.58554 7.05263 5.66898 6.97494 5.76843 6.8448C5.88158 6.69694 5.99861 6.50992 6.13442 6.3066C6.3252 6.02172 6.55183 5.70284 6.86221 5.42676C6.88361 5.40776 6.9067 5.38757 6.93076 5.3668C6.9828 5.32177 7.04163 5.27232 7.10719 5.22047C7.30034 5.07141 7.5456 4.88706 7.80757 4.71886C8.71068 3.95263 9.71696 3.28338 10.7293 2.70767C10.7419 2.7005 10.7544 2.69332 10.7671 2.68612C11.8748 2.06593 12.8724 1.46369 14.1381 0.86701C14.7749 0.620008 15.4275 0.438352 16.0733 0.291915C17.0039 0.0823769 17.8981 -0.00131372 18.5654 8.41916e-06C19.2336 0.00317869 19.6218 0.0954808 19.6508 0.254169C19.6774 0.413795 19.3416 0.629418 18.7217 0.864554C18.1034 1.10084 17.2502 1.33232 16.3865 1.56236C15.7859 1.72283 15.2079 1.90933 14.6592 2.14638C14.0383 2.46373 13.2251 2.96502 12.5057 3.3986C12.4385 3.44174 12.3733 3.48361 12.3062 3.52644C12.0469 3.69207 11.8 3.85878 11.5598 4.0256C11.3492 4.17245 11.1465 4.32133 10.9479 4.47248C10.8524 4.54527 10.7558 4.61997 10.6615 4.69417Z" fill="#2F486D"/> <path fill-rule="evenodd" clip-rule="evenodd" d="M17.5567 9.70337C17.5955 9.39765 17.8643 9.176 18.1686 9.19877L21.8307 9.47277C22.1076 9.49349 22.3302 9.71134 22.3593 9.99021L22.658 12.8471C22.8509 12.9161 23.0529 13.0016 23.2356 13.084C23.5757 13.2374 23.9135 13.4102 24.1231 13.5312C24.3851 13.6824 24.6809 13.9501 24.9248 14.2058C25.0527 14.3399 25.181 14.4862 25.2961 14.6324C25.8974 14.4165 26.699 14.1224 26.9687 14.0026C27.2867 13.8612 27.9962 13.4288 28.332 13.2153C28.4719 13.1263 28.6431 13.1026 28.8016 13.1502C28.9601 13.1978 29.0905 13.312 29.1596 13.4638L30.6158 16.6628C30.7311 16.9161 30.6517 17.2163 30.4268 17.3778L27.8659 19.2161C27.8981 19.3526 27.9268 19.4951 27.9513 19.6304C28.0073 19.9388 28.0512 20.264 28.0676 20.4973C28.1181 21.211 28.0096 21.7399 27.8838 22.1536C28.416 22.5195 29.1434 23.0126 29.4403 23.1903C29.8184 23.4166 30.2761 23.6542 30.5903 23.7801C30.8745 23.8939 31.0205 24.2127 30.9225 24.5052C30.7886 24.9044 30.6144 25.3814 30.452 25.7937C30.2988 26.1825 30.132 26.5773 30.0142 26.7652C29.8863 26.9693 29.7713 27.1871 29.6513 27.4143C29.6056 27.5008 29.5592 27.5887 29.511 27.6777C29.4286 27.8302 29.3404 27.9866 29.2487 28.1242C29.1615 28.255 29.0459 28.4079 28.8988 28.5232C28.7236 28.6604 28.4858 28.6835 28.2879 28.5825L25.3438 27.0795C25.2556 27.1722 25.1623 27.2627 25.0702 27.3467C24.8463 27.5508 24.5855 27.756 24.3562 27.8847C24.1576 27.9961 23.8249 28.1578 23.4921 28.3006C23.3119 28.3779 23.1119 28.4585 22.9221 28.5231L22.4263 31.7073C22.4025 31.8596 22.3198 31.9961 22.1962 32.0866C22.0727 32.1772 21.9185 32.2143 21.7678 32.1898C21.3443 32.121 20.3235 32.0834 19.963 32.0834C19.7686 32.0834 19.4334 32.0562 19.1134 32.0303C19.085 32.028 19.0567 32.0257 19.0286 32.0234C18.6595 31.9936 18.3114 31.9671 18.1009 31.9671C17.8129 31.9671 17.5695 31.7516 17.5317 31.4633L17.1151 28.2858C17.0034 28.2629 16.8848 28.236 16.7662 28.2057C16.4895 28.1349 16.136 28.0265 15.8879 27.8662C15.6118 27.6877 15.0678 27.2669 14.6794 26.9597L11.7677 28.4228C11.6247 28.4946 11.4585 28.5031 11.3091 28.4461C11.1596 28.389 11.0405 28.2717 10.9802 28.1223C10.894 27.9088 10.7461 27.5604 10.5857 27.2176C10.4197 26.863 10.2595 26.5562 10.1489 26.3988C9.86033 25.988 9.29881 25.1714 9.05504 24.8157C8.95962 24.6765 8.9292 24.5022 8.97175 24.3384C9.01431 24.1746 9.12558 24.0378 9.27638 23.9639C9.54716 23.8311 9.97513 23.6102 10.3722 23.3824C10.5709 23.2684 10.7564 23.1559 10.9082 23.0542C11.0694 22.9463 11.1606 22.8716 11.1957 22.8348C11.4417 22.5764 11.8047 22.2974 12.1012 22.088C11.9706 21.68 11.8384 21.1239 11.849 20.612C11.8583 20.1605 11.9358 19.7161 12.0155 19.3818L9.39307 17.6594C9.13516 17.49 9.05527 17.1454 9.2119 16.878C9.43948 16.4894 9.92693 15.602 10.1288 15.0622C10.369 14.4202 10.8696 13.5124 11.0827 13.1481C11.2437 12.8729 11.5949 12.7812 11.8678 12.9431L14.5682 14.5449C14.9179 14.2175 15.4132 13.7865 15.8188 13.5386C16.2229 13.2915 16.7685 13.0435 17.1532 12.8822L17.5567 9.70337ZM18.6265 10.3961L18.2493 13.368C18.2223 13.5803 18.0817 13.7604 17.8835 13.8364C17.5766 13.9541 16.8622 14.2565 16.4134 14.5308C15.9836 14.7936 15.3383 15.3939 15.0579 15.6772C14.873 15.8639 14.5866 15.9009 14.3611 15.7672L11.7898 14.2419C11.5794 14.6328 11.3363 15.1159 11.2031 15.4721C11.0349 15.9217 10.7232 16.528 10.473 16.9852L12.9963 18.6425C13.2179 18.7881 13.3125 19.0676 13.2255 19.3197C13.1581 19.5148 13.0085 20.0819 12.9971 20.6361C12.9866 21.1428 13.2056 21.8117 13.3235 22.0846C13.4373 22.3481 13.3429 22.656 13.1015 22.8083C12.8457 22.9698 12.2961 23.3523 12.0234 23.6387C11.8958 23.7728 11.7152 23.9055 11.5427 24.021C11.3609 24.1427 11.1507 24.2697 10.9393 24.3909C10.7509 24.499 10.5571 24.6051 10.3746 24.7019C10.6228 25.0624 10.9077 25.4745 11.0854 25.7275C11.2611 25.9775 11.4588 26.3692 11.6239 26.7219C11.6854 26.8533 11.745 26.9852 11.8005 27.1108L14.4937 25.7575C14.6935 25.6571 14.9328 25.6827 15.1073 25.8232C15.4624 26.109 16.2121 26.6987 16.5069 26.8892C16.5842 26.9392 16.7757 27.0116 17.0482 27.0813C17.3002 27.1458 17.5565 27.1922 17.7103 27.2144C17.9651 27.2512 18.1645 27.4547 18.1983 27.7124L18.6068 30.8284C18.7759 30.8396 18.9535 30.8538 19.12 30.8672L19.1699 30.8712C19.5242 30.8998 19.8172 30.9235 19.963 30.9235C20.2234 30.9235 20.8488 30.9418 21.3767 30.9824L21.845 27.9748C21.8829 27.7312 22.0693 27.5385 22.3095 27.4944C22.4455 27.4694 22.7206 27.3715 23.0431 27.2331C23.352 27.1005 23.6458 26.9565 23.7986 26.8708C23.9207 26.8022 24.1083 26.6611 24.3008 26.4856C24.4941 26.3094 24.6488 26.1383 24.7238 26.0276C24.8863 25.7876 25.1997 25.7064 25.4566 25.8375L28.3853 27.3326C28.4219 27.2702 28.461 27.2 28.5032 27.1219C28.5396 27.0545 28.5787 26.9804 28.62 26.9023C28.7455 26.6645 28.8911 26.3887 29.0439 26.1448C29.0929 26.0668 29.2203 25.7829 29.385 25.3648C29.4768 25.1319 29.5727 24.8769 29.662 24.6291C29.3882 24.4934 29.1021 24.3361 28.8549 24.1881C28.4411 23.9405 27.3533 23.1942 26.8746 22.8618C26.6602 22.7128 26.5717 22.4368 26.6591 22.1892L26.6692 22.1606L26.6692 22.1606C26.8182 21.7385 26.973 21.2976 26.9222 20.5799C26.9096 20.4014 26.8727 20.1202 26.8218 19.8393C26.7691 19.5485 26.7104 19.3101 26.6655 19.1947C26.5691 18.9467 26.6523 18.6642 26.8673 18.5099L29.3737 16.7107L28.3859 14.5407C28.0534 14.74 27.6759 14.9555 27.4312 15.0642C27.0414 15.2374 25.8123 15.68 25.2672 15.8728C25.0077 15.9646 24.7201 15.8576 24.5815 15.6176C24.4954 15.4686 24.3153 15.2385 24.0978 15.0105C23.8763 14.7783 23.6712 14.6062 23.5534 14.5382C23.3833 14.44 23.0804 14.2843 22.7674 14.1431C22.4399 13.9953 22.1615 13.8914 22.019 13.8637C21.7708 13.8155 21.583 13.609 21.5564 13.3551L21.2677 10.5937L18.6265 10.3961ZM18.906 17.1764C19.2143 17.0789 19.5254 17.0421 19.8886 17.0433C20.7183 17.0459 21.2116 17.3163 21.8086 17.711C22.6303 18.2542 23.2534 18.8968 23.5886 19.9123C23.8121 20.5897 23.6382 21.2844 23.5164 21.7711C23.5039 21.8212 23.4919 21.8691 23.4809 21.9146C23.2388 22.92 22.5247 23.8503 21.4648 24.1715C20.8814 24.3483 20.2063 24.3915 19.5663 24.3142C18.9292 24.2373 18.2791 24.0349 17.7673 23.6752C17.0706 23.1858 16.6454 22.4295 16.4161 21.6577C16.2499 21.0982 16.2964 20.3254 16.4264 19.824C16.553 19.3358 16.8107 18.732 17.2144 18.3086L17.2181 18.3046C17.4282 18.0843 17.6757 17.8248 18.0391 17.5991C18.3298 17.4186 18.6023 17.2725 18.906 17.1764ZM19.2491 18.2833C19.0771 18.3377 18.8977 18.4276 18.6404 18.5873C18.4129 18.7285 18.2542 18.89 18.0416 19.1131C17.8228 19.3426 17.6356 19.7388 17.5373 20.1179C17.4437 20.4789 17.4273 21.0255 17.516 21.3244C17.6972 21.9343 18.0044 22.4289 18.423 22.7231C18.7378 22.9443 19.1927 23.101 19.7027 23.1626C20.2098 23.2238 20.7237 23.1851 21.1349 23.0605C21.7315 22.8797 22.1999 22.3264 22.3651 21.6405C22.3722 21.6111 22.3792 21.5822 22.386 21.5539C22.5237 20.9842 22.6117 20.6201 22.4991 20.279C22.2695 19.5832 21.8573 19.1294 21.1798 18.6814C20.654 18.3339 20.3867 18.2047 19.885 18.2031C19.605 18.2022 19.4165 18.2303 19.2491 18.2833Z" fill="#2F486D"/> </svg>
+      </button>
+    </div>
+
+    <div class="empty-text" id="empty-text">
+      Nothing here yet.<br>Just notice something.
+    </div>
+
+    <div class="stamps-grid" id="stamps-grid"></div>
+
+    <div class="oval-btn page-btn" id="btn-make">
+      <img data-key="btn_circle_page"    src="" alt="" class="ob-default">
+      <img data-key="btn_circle_page_td" src="" alt="" class="ob-pressed">
+      <span class="ob-label">Make a stamp</span>
+    </div>
+  </div>
+
+
+
+  <!-- ════════════════ EDIT ════════════════ -->
+  <div class="screen" id="edit">
+    <img data-key="edit_paper" src="" alt="" class="paper-bg">
+    <div class="status-bar">
+      <span class="status-time">9:41</span>
+      <div class="status-icons">
+        <img data-key="cellular" src="" alt="">
+        <img data-key="wifi" src="" alt="">
+        <img data-key="battery" src="" class="s-battery" alt="">
+      </div>
+    </div>
+
+    <!-- Preview image -->
+    <div class="edit-preview">
+      <img id="edit-img" src="" alt="">
+      <canvas id="grain-overlay" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none;opacity:0;"></canvas>
+    </div>
+
+    <!-- Filter label -->
+    <p class="filter-label" id="filter-label">Original</p>
+
+    <!-- Filter icons carousel -->
+    <div class="filter-row-wrap">
+      <div class="filter-row" id="filter-row">
+        <button class="filter-icon-btn active" data-filter="original" data-idx="0" onclick="setFilter('original',0)">
+          <img data-key="icon_original" src="" alt="Original">
+        </button>
+        <button class="filter-icon-btn inactive" data-filter="contrast" data-idx="1" onclick="setFilter('contrast',1)">
+          <img data-key="icon_contrast" src="" alt="Contrast">
+        </button>
+        <button class="filter-icon-btn inactive" data-filter="texture" data-idx="2" onclick="setFilter('texture',2)">
+          <img data-key="icon_texture" src="" alt="Texture">
+        </button>
+        <button class="filter-icon-btn inactive" data-filter="brightness" data-idx="3" onclick="setFilter('brightness',3)">
+          <img data-key="icon_brightness" src="" alt="Brightness">
+        </button>
+      </div>
+    </div>
+
+    <!-- Ticks slider -->
+    <div class="slider-wrap" id="slider-wrap">
+      <div class="ticks-value" id="ticks-value">0</div>
+      <div class="ticks-track" id="ticks-track">
+        <svg width="393" height="21" viewBox="0 0 393 21" fill="none" xmlns="http://www.w3.org/2000/svg"> <line x1="207.279" y1="2.22992e-08" x2="207.279" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="196.5" y1="2.22992e-08" x2="196.5" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="217.08" y1="2.22992e-08" x2="217.08" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="226.881" y1="2.22992e-08" x2="226.881" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="236.682" y1="2.22992e-08" x2="236.682" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="246.483" y1="2.22992e-08" x2="246.483" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="256.284" y1="2.22992e-08" x2="256.284" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="266.085" y1="2.22992e-08" x2="266.085" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="275.886" y1="2.22992e-08" x2="275.886" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="285.688" y1="2.22992e-08" x2="285.688" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="295.489" y1="2.22992e-08" x2="295.489" y2="21" stroke="#2F486D"/> <line x1="305.29" y1="2.22992e-08" x2="305.29" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="315.091" y1="2.22992e-08" x2="315.091" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="324.892" y1="2.22992e-08" x2="324.892" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="334.693" y1="2.22992e-08" x2="334.693" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="344.494" y1="2.22992e-08" x2="344.494" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="354.296" y1="2.22992e-08" x2="354.296" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="364.097" y1="2.22992e-08" x2="364.097" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="373.898" y1="2.22992e-08" x2="373.898" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="383.699" y1="2.22992e-08" x2="383.699" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 186.221 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 176.42 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 166.619 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 156.818 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 147.017 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 137.216 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 127.415 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 117.614 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 107.812 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 98.0112 0)" stroke="#2F486D"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 88.2101 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 78.409 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 68.6078 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 58.8068 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 49.0056 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 39.2045 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 29.4034 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 19.6022 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 9.80103 0)" stroke="#2F486D" stroke-opacity="0.5"/> </svg>
+        <svg width="393" height="21" viewBox="0 0 393 21" fill="none" xmlns="http://www.w3.org/2000/svg"> <line x1="207.279" y1="2.22992e-08" x2="207.279" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="196.5" y1="2.22992e-08" x2="196.5" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="217.08" y1="2.22992e-08" x2="217.08" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="226.881" y1="2.22992e-08" x2="226.881" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="236.682" y1="2.22992e-08" x2="236.682" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="246.483" y1="2.22992e-08" x2="246.483" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="256.284" y1="2.22992e-08" x2="256.284" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="266.085" y1="2.22992e-08" x2="266.085" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="275.886" y1="2.22992e-08" x2="275.886" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="285.688" y1="2.22992e-08" x2="285.688" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="295.489" y1="2.22992e-08" x2="295.489" y2="21" stroke="#2F486D"/> <line x1="305.29" y1="2.22992e-08" x2="305.29" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="315.091" y1="2.22992e-08" x2="315.091" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="324.892" y1="2.22992e-08" x2="324.892" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="334.693" y1="2.22992e-08" x2="334.693" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="344.494" y1="2.22992e-08" x2="344.494" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="354.296" y1="2.22992e-08" x2="354.296" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="364.097" y1="2.22992e-08" x2="364.097" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="373.898" y1="2.22992e-08" x2="373.898" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="383.699" y1="2.22992e-08" x2="383.699" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 186.221 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 176.42 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 166.619 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 156.818 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 147.017 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 137.216 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 127.415 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 117.614 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 107.812 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 98.0112 0)" stroke="#2F486D"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 88.2101 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 78.409 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 68.6078 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 58.8068 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 49.0056 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 39.2045 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 29.4034 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 19.6022 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 9.80103 0)" stroke="#2F486D" stroke-opacity="0.5"/> </svg>
+        <svg width="393" height="21" viewBox="0 0 393 21" fill="none" xmlns="http://www.w3.org/2000/svg"> <line x1="207.279" y1="2.22992e-08" x2="207.279" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="196.5" y1="2.22992e-08" x2="196.5" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="217.08" y1="2.22992e-08" x2="217.08" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="226.881" y1="2.22992e-08" x2="226.881" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="236.682" y1="2.22992e-08" x2="236.682" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="246.483" y1="2.22992e-08" x2="246.483" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="256.284" y1="2.22992e-08" x2="256.284" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="266.085" y1="2.22992e-08" x2="266.085" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="275.886" y1="2.22992e-08" x2="275.886" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="285.688" y1="2.22992e-08" x2="285.688" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="295.489" y1="2.22992e-08" x2="295.489" y2="21" stroke="#2F486D"/> <line x1="305.29" y1="2.22992e-08" x2="305.29" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="315.091" y1="2.22992e-08" x2="315.091" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="324.892" y1="2.22992e-08" x2="324.892" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="334.693" y1="2.22992e-08" x2="334.693" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="344.494" y1="2.22992e-08" x2="344.494" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="354.296" y1="2.22992e-08" x2="354.296" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="364.097" y1="2.22992e-08" x2="364.097" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="373.898" y1="2.22992e-08" x2="373.898" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line x1="383.699" y1="2.22992e-08" x2="383.699" y2="21" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 186.221 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 176.42 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 166.619 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 156.818 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 147.017 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 137.216 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 127.415 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 117.614 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 107.812 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 98.0112 0)" stroke="#2F486D"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 88.2101 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 78.409 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 68.6078 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 58.8068 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 49.0056 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 39.2045 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 29.4034 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 19.6022 0)" stroke="#2F486D" stroke-opacity="0.5"/> <line y1="-0.5" x2="21" y2="-0.5" transform="matrix(4.28421e-08 1 1 -4.45984e-08 9.80103 0)" stroke="#2F486D" stroke-opacity="0.5"/> </svg>
+      </div>
+      <div class="ticks-center">
+        <svg width="1" height="33" viewBox="0 0 1 33" fill="none" xmlns="http://www.w3.org/2000/svg"> <line y1="-0.5" x2="33" y2="-0.5" transform="matrix(-4.37114e-08 1 1 4.37114e-08 1 0)" stroke="#2F486D"/> </svg>
+      </div>
+    </div>
+
+    <!-- Back / Next nav -->
+    <div class="edit-nav">
+      <button class="edit-nav-btn" onclick="goTo('photo')">
+        <img data-key="btn_back" src="" alt="Back">
+      </button>
+      <button class="edit-nav-btn" onclick="saveStampEdit()">
+        <img data-key="btn_next" src="" alt="Next">
+      </button>
+    </div>
+  </div>
+
+  <!-- ════════════════ PHOTO ════════════════ -->
+  <div class="screen" id="photo">
+    <img data-key="paper_photo" src="" alt="" class="paper-bg">
+    <div class="status-bar">
+      <span class="status-time">9:41</span>
+      <div class="status-icons">
+        <img data-key="cellular" src="" alt="">
+        <img data-key="wifi" src="" alt="">
+        <img data-key="battery" src="" class="s-battery" alt="">
+      </div>
+    </div>
+
+    <p class="photo-title">Save this moment</p>
+
+    <button class="close-btn" onclick="closePhoto()">
+      <svg width="33" height="33" viewBox="0 0 33 33" fill="none" xmlns="http://www.w3.org/2000/svg"> <path fill-rule="evenodd" clip-rule="evenodd" d="M7.52763 7.86738C7.79611 7.59889 8.23141 7.59889 8.4999 7.86738L16.946 16.3135L17.1686 16.0909L23.7971 8.47235C24.0463 8.18589 24.4806 8.15571 24.767 8.40494C25.0535 8.65417 25.0837 9.08842 24.8344 9.37487L18.1903 17.0115C18.1799 17.0235 18.169 17.0351 18.1578 17.0463L17.9183 17.2858L25.6202 24.9877C25.8887 25.2562 25.8887 25.6915 25.6202 25.96C25.3517 26.2284 24.9164 26.2284 24.6479 25.96L16.946 18.2581L9.41843 25.7857C9.14995 26.0542 8.71465 26.0542 8.44616 25.7857C8.17767 25.5172 8.17767 25.0819 8.44616 24.8134L15.9738 17.2858L7.52763 8.83965C7.25914 8.57117 7.25914 8.13587 7.52763 7.86738Z" fill="#2F486D" stroke="#2F486D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/> </svg>
+    </button>
+
+    <!-- Camera viewfinder -->
+    <div class="viewfinder" id="viewfinder">
+      <video id="camera-video" autoplay playsinline muted></video>
+      <div class="cam-fallback" id="cam-fallback" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+        <span>Brak dostępu do kamery</span>
+      </div>
+    </div>
+
+    <!-- Shutter button -->
+        <!-- Shutter button -->
+    <div class="shutter-wrap">
+      <button class="shutter-btn" onclick="takePhoto()">
+        <div class="shutter-inner"></div>
+        <svg width="112" height="113" viewBox="0 0 112 113" fill="none" xmlns="http://www.w3.org/2000/svg"> <path d="M104.337 84.5076C103.056 87.0134 99.8077 91.3761 97.7494 93.5292C97.7126 93.5695 97.6757 93.6097 97.6387 93.6499C97.1596 94.169 96.7016 94.6554 96.1535 95.2141C94.8289 96.5199 93.0841 98.3829 88.8056 101.442C87.5683 102.341 86.2951 103.188 84.9864 103.982C76.2426 109.309 66.0003 112.113 55.7794 112.036C49.5015 112.004 43.2515 110.921 37.348 108.822C37.1516 108.754 36.9523 108.684 36.7515 108.613C32.8472 107.264 28.2674 104.908 25.6013 103.112C22.1919 100.855 20.0975 99.0199 18.427 97.4805C8.75741 88.7357 2.30673 76.564 0.546118 63.6902C0.178183 61.0565 -0.00237197 58.4131 2.11e-05 55.7509C0.00159979 54.3274 0.0545897 52.9275 0.160897 51.5108C0.441194 47.7766 1.09408 44.0682 2.11245 40.4627C2.68372 38.3599 3.34917 36.3866 4.05344 34.5939C5.04325 32.0722 6.11036 29.9033 7.0853 28.1637C9.40701 23.9516 12.818 19.6468 15.679 16.7931C16.1431 16.3229 16.5896 15.8873 17.0079 15.4903C19.3085 13.2522 21.802 11.2091 24.453 9.3934C24.636 9.28113 24.821 9.16952 25.0098 9.05719C27.3749 7.676 30.2458 5.8854 35.1541 3.89831C37.2969 3.04597 39.8291 2.1818 42.892 1.46491C44.8706 1.00947 45.9022 0.896451 46.7488 0.795962C46.9973 0.767852 47.2331 0.742648 47.4669 0.716981C48.2713 0.628928 49.1142 0.483888 50.1208 0.341203C51.4137 0.1597 52.9926 -0.0261459 55.075 0.00299585C55.3143 0.00656039 55.5491 0.0112976 55.7794 0.017053C61.9243 0.232704 64.6713 0.762925 66.7851 1.04936C67.426 1.14987 68.0102 1.25242 68.5998 1.37666C70.5142 1.76874 73.1868 2.60946 75.1313 3.40588C76.6878 4.01347 79.7724 5.27909 82.0297 6.43894C82.8855 6.86948 84.019 7.50139 85.3145 8.30913C86.6556 9.14449 88.1697 10.1705 89.7379 11.3399C93.6846 14.3232 95.5022 16.2576 96.9706 17.7758C97.3851 18.2147 97.764 18.6295 98.1372 19.0494C99.3183 20.3749 100.704 22.0922 101.985 23.9212C103.524 26.1042 104.902 28.451 105.86 30.2788C108.266 35.0649 109.969 40.1983 110.904 45.4566C111.391 48.1654 111.537 50.795 111.454 52.7383C111.371 54.6681 111.109 55.7519 110.866 55.7509C110.615 55.7509 110.399 54.6728 110.12 52.8094C109.84 50.9298 109.482 48.42 108.975 45.8147C107.964 40.5781 106.167 35.4965 103.673 30.7909C100.637 25.0569 96.5708 19.881 91.7419 15.5594C88.3654 12.5354 84.6098 9.93098 80.5911 7.83445C80.1774 7.61856 79.7606 7.40776 79.3407 7.20227C75.891 5.57831 72.2647 4.40494 69.6792 3.74732C67.5446 3.19862 65.9695 2.86697 64.6135 2.61222C63.6752 2.43854 62.8539 2.30908 62.0057 2.21379C61.5498 2.16285 60.931 2.10108 60.1826 2.04507C58.988 1.95539 57.4789 1.88369 55.7794 1.88903C53.1192 1.8912 50.0479 2.11094 47.1751 2.54108C45.0843 2.8464 42.6783 3.32394 40.4118 3.94725C37.1701 4.82265 34.2543 6.00723 32.8331 6.70272C30.328 7.9074 27.5409 9.46402 25.205 11.0417C22.9706 12.5377 21.1425 14.0288 20.1639 14.9407C18.9969 16.032 17.9867 16.9454 16.5634 18.3875C15.5814 19.3919 14.3991 20.6542 12.9485 22.498C11.2809 24.6329 10.2135 26.2283 9.33738 27.6055C8.12104 29.5488 7.26796 31.0657 6.25103 33.4302C5.1254 36.0603 4.18048 38.8989 3.53748 41.1558C3.23985 42.1885 2.94741 43.371 2.68889 44.6236C2.34683 46.2721 2.07253 48.0276 1.87063 49.6367C1.70362 50.9639 1.57865 52.0571 1.48735 53.0379C1.45922 53.3407 1.43474 53.6322 1.41424 53.9152C1.39438 54.5246 1.38465 55.1365 1.38523 55.7509C1.38566 56.2095 1.39185 56.6668 1.40374 57.1227C1.41573 57.2952 1.42957 57.4762 1.44492 57.6649C1.52213 58.6054 1.63931 59.7819 1.80843 61.207C2.08167 63.4811 2.38053 65.4576 2.80731 67.531C3.14247 69.142 3.55865 70.8089 4.17759 72.6748C4.59932 73.9465 5.1461 75.3746 5.74972 76.7576C6.64368 78.8203 7.67546 80.7804 8.41278 82.1314C8.68826 82.6385 8.91112 83.0824 9.13677 83.5193C9.13772 83.5213 9.13867 83.5232 9.13963 83.5252C9.15496 83.5548 9.17043 83.5846 9.18582 83.6142C11.1348 86.822 13.4192 89.8244 15.9852 92.5577C16.2115 92.7909 16.4422 93.0246 16.6727 93.254C17.7978 94.3769 18.9481 95.4073 19.7311 96.0382C20.5744 96.7264 22.6719 98.4894 25.0613 100.095C26.6206 101.154 28.2952 102.151 29.7005 102.893C30.5219 103.327 31.286 103.761 32.0876 104.189C32.8348 104.588 33.6094 104.981 34.4874 105.35C34.9277 105.536 35.405 105.72 35.9203 105.909C36.3734 106.076 36.8561 106.246 37.3609 106.421C37.828 106.583 38.8645 106.973 40.216 107.402C41.0482 107.667 42.0123 107.949 43.0211 108.205C45.7166 108.839 48.4492 109.261 51.2051 109.476C51.7807 109.497 52.2829 109.494 52.6815 109.471C52.9684 109.455 53.2096 109.428 53.4575 109.399C53.795 109.359 54.1438 109.315 54.6238 109.281C54.999 109.254 55.4415 109.245 55.7394 109.259C55.753 109.26 55.7664 109.26 55.7794 109.261C55.899 109.268 55.9942 109.279 56.0814 109.289C56.1922 109.302 56.2911 109.313 56.4117 109.311C56.4986 109.31 56.5889 109.299 56.6998 109.286C56.8768 109.265 57.1067 109.237 57.4561 109.226C58.7497 109.184 60.2387 109.094 61.6772 108.942C63.284 108.776 64.8424 108.532 66.072 108.284C67.4517 108.01 69.4147 107.591 71.347 107.038C72.698 106.654 74.0289 106.213 75.1601 105.784C76.2654 105.366 77.3921 104.865 78.4624 104.343C79.7486 103.717 80.9557 103.062 81.9901 102.515C82.1992 102.405 82.473 102.292 82.8151 102.147C83.0576 102.044 83.3359 101.923 83.6471 101.775C84.9249 101 86.1691 100.174 87.3791 99.298C87.4186 99.2629 87.4594 99.2268 87.5001 99.1905C87.5007 99.1899 87.5014 99.1892 87.502 99.1886C88.4206 98.3651 89.6496 97.2302 91.4675 95.7418C91.9291 95.3623 92.2358 95.1395 92.5118 94.9376C92.7825 94.7388 93.0238 94.5594 93.342 94.26C93.7032 93.9197 94.1002 93.4879 94.523 93.0093C95.1172 92.3373 95.7608 91.5727 96.446 90.8391C96.4928 90.7891 96.5431 90.7351 96.5953 90.6788C97.0908 90.1449 97.8084 89.3414 98.5285 88.5392C100.488 86.0247 102.23 83.337 103.722 80.5151C106.212 75.8113 108.005 70.7286 109.01 65.492C109.505 62.9387 109.857 60.4785 110.132 58.6352C110.407 56.8086 110.62 55.7506 110.866 55.7509C111.105 55.7497 111.361 56.8132 111.448 58.7039C111.534 60.609 111.401 63.1857 110.941 65.8431C110.2 70.1666 108.943 74.4084 107.2 78.4482C107.112 78.6612 107.021 78.8744 106.93 79.0859C106.248 80.6575 105.579 82.1062 104.85 83.5301C104.683 83.857 104.512 84.1829 104.337 84.5076Z" fill="#2F486D"/> <circle cx="55.7794" cy="55.7509" r="46" fill="#2F486D"/> </svg>
+      </button>
+    </div>
+
+    <!-- Flash effect -->
+    <div class="flash-overlay" id="flash-overlay"></div>
+  </div>
+
+  <!-- ════════════════ SETTINGS OVERLAY ════════════════ -->
+  <div id="settings-overlay">
+    <div class="settings-dim" onclick="closeSettings()"></div>
+    <div class="settings-card-wrap">
+      <div class="settings-card">
+        <div class="settings-row" onclick="toggleReminder()">
+          <div class="row-text">
+            <h3>Daily reminder</h3>
+            <p>A gentle nudge, once a day.</p>
+          </div>
+          <div class="toggle" id="reminder-toggle">
+            <div class="toggle-knob"></div>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div class="row-text">
+            <h3>Save your stamps</h3>
+            <p>So they're here when you come back.</p>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div class="row-text"><h3>About</h3></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /phone -->
+
+<input type="file" accept="image/*" id="photo-upload" onchange="handlePhotoUpload(event)">
+
+<script>
+/* ─── ASSETS ──────────────────────────────────── */
+const ASSETS = {
+  splash_logo:     "https://www.figma.com/api/mcp/asset/652aebe9-b437-4a8d-a4ac-d2c9dfea5a5c",
+  paper_main:      "https://www.figma.com/api/mcp/asset/94526e24-f3a2-4592-a270-9ed51e24013b",
+  logo:            "https://www.figma.com/api/mcp/asset/5f200632-a199-44e7-8700-7cc5dbcc5934",
+  handwriting:     "https://www.figma.com/api/mcp/asset/a193fd99-a38f-4aac-8e5a-a01229f96499",
+  underline:       "https://www.figma.com/api/mcp/asset/5dd0c418-9f67-4302-b710-d418e0c123b5",
+  btn_circle:      "https://www.figma.com/api/mcp/asset/274e04aa-382c-4bfa-ac2b-0a975f287229",
+  btn_circle_td:   "https://www.figma.com/api/mcp/asset/331282a7-0b79-4d04-8567-fe1547a69a38",
+  paper_page:      "https://www.figma.com/api/mcp/asset/078e559c-187e-4931-9490-1ebf195ab65c",
+  paper_photo:     "https://www.figma.com/api/mcp/asset/4d8adbc3-a54b-44f3-ac1c-baaebea08878",
+  btn_circle_page: "https://www.figma.com/api/mcp/asset/274e04aa-382c-4bfa-ac2b-0a975f287229",
+  btn_circle_page_td: "https://www.figma.com/api/mcp/asset/331282a7-0b79-4d04-8567-fe1547a69a38",
+  edit_paper:        "https://www.figma.com/api/mcp/asset/09c2d55d-b2c8-4dd9-9aba-593a024d6fc3",
+  icon_original:     "https://www.figma.com/api/mcp/asset/e6079248-fa09-4d5d-afe1-589d0f89b525",
+  icon_contrast:     "https://www.figma.com/api/mcp/asset/37783f30-5805-401a-baeb-55190bb850a4",
+  icon_texture:      "https://www.figma.com/api/mcp/asset/9ae80812-f494-436c-a49f-a48d15626c92",
+  icon_brightness:   "https://www.figma.com/api/mcp/asset/61b3a75f-7bf3-4428-bedb-fa8ab7c61339",
+  btn_back:          "https://www.figma.com/api/mcp/asset/7b305635-a0bf-47e7-8f4d-4fdff65cce22",
+  btn_next:          "https://www.figma.com/api/mcp/asset/2970e04d-9250-413a-acb0-919565bb07c9",
+  settings_icon_outer: "https://www.figma.com/api/mcp/asset/7b48b486-4d04-42b8-a65f-88b82fcb3e21",
+  settings_icon_inner: "https://www.figma.com/api/mcp/asset/f489571f-9737-41c0-bf5d-9b846456c778",
+  cellular:        "https://www.figma.com/api/mcp/asset/4581db57-13f8-47a9-864a-81956d4e68fd",
+  wifi:            "https://www.figma.com/api/mcp/asset/8024fa14-2ab9-4bea-86f5-62c4ebd04231",
+  battery:         "https://www.figma.com/api/mcp/asset/8d5104f2-b1dc-4314-9c19-aa545a48c8a2",
+  cellular_w:      "https://www.figma.com/api/mcp/asset/880dd0c6-c52f-4e50-8430-9a9c2b2dc4d2",
+  wifi_w:          "https://www.figma.com/api/mcp/asset/a1e05875-10f8-49f2-a548-9cc503858906",
+  battery_w:       "https://www.figma.com/api/mcp/asset/39464d07-f5a8-47ab-b0c5-130755b50fc7",
+};
+
+/* ─── INDEXEDDB CACHE ─────────────────────────── */
+const DB_NAME = 'stamps_v5', STORE = 'imgs';
+function openDB() {
+  return new Promise((res,rej) => {
+    const r = indexedDB.open(DB_NAME,1);
+    r.onupgradeneeded = e => e.target.result.createObjectStore(STORE);
+    r.onsuccess = e => res(e.target.result);
+    r.onerror   = () => rej(r.error);
+  });
+}
+function dbGet(db,k){ return new Promise(res=>{ const r=db.transaction(STORE,'readonly').objectStore(STORE).get(k); r.onsuccess=()=>res(r.result||null); r.onerror=()=>res(null); }); }
+function dbSet(db,k,v){ return new Promise(res=>{ const tx=db.transaction(STORE,'readwrite'); tx.objectStore(STORE).put(v,k); tx.oncomplete=res; tx.onerror=res; }); }
+async function toDataUrl(url){
+  const r=await fetch(url), b=await r.blob();
+  return new Promise(res=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(b); });
+}
+
+/* ─── BOOT ────────────────────────────────────── */
+let db=null;
+async function boot(){
+  try { db=await openDB(); } catch(e){}
+  const keys=Object.keys(ASSETS);
+  await Promise.all(keys.map(async k=>{
+    const url=ASSETS[k];
+    if(db){ const c=await dbGet(db,k); if(c){ applyImg(k,c); return; } }
+    try{
+      const d=await toDataUrl(url);
+      applyImg(k,d);
+      if(db) await dbSet(db,k,d);
+    } catch{ applyImg(k,url); }
+  }));
+  const ld=document.getElementById('loading');
+  ld.classList.add('hidden');
+  setTimeout(()=>ld.style.display='none',700);
+  setTimeout(()=>goTo('main'), 2200);
+}
+function applyImg(key,src){
+  document.querySelectorAll(`[data-key="${key}"]`).forEach(el=>el.src=src);
+}
+
+/* ─── NAVIGATION ──────────────────────────────── */
+function goTo(id){
+  const prev=document.querySelector('.screen.active');
+  const next=document.getElementById(id);
+  if(!next||prev===next) return;
+  if(prev) prev.classList.remove('active','enter');
+  next.classList.remove('enter');
+  void next.offsetWidth;
+  if(id!=='splash') next.classList.add('enter');
+  next.classList.add('active');
+}
+
+/* ─── OVAL BUTTON PRESS FEEL ──────────────────── */
+function initOvalBtn(el, cb){
+  if(!el) return;
+  const press=e=>{ e.preventDefault(); el.classList.add('pressed'); };
+  const rel=()=>{ el.classList.remove('pressed'); if(cb) setTimeout(cb,130); };
+  el.addEventListener('mousedown',press);
+  el.addEventListener('touchstart',press,{passive:false});
+  el.addEventListener('mouseup',rel);
+  el.addEventListener('touchend',rel);
+  el.addEventListener('mouseleave',()=>el.classList.remove('pressed'));
+}
+
+/* ─── TITLE EDIT ──────────────────────────────── */
+let editingTitle=false;
+function toggleTitleEdit(){
+  const t=document.getElementById('page-title');
+  editingTitle=!editingTitle;
+  t.contentEditable=editingTitle?'true':'false';
+  if(editingTitle){
+    t.focus();
+    const rng=document.createRange(), sel=window.getSelection();
+    rng.selectNodeContents(t); rng.collapse(false);
+    sel.removeAllRanges(); sel.addRange(rng);
+  } else { t.blur(); }
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&editingTitle){ e.preventDefault(); toggleTitleEdit(); }
+});
+
+/* ─── SETTINGS ────────────────────────────────── */
+function openSettings(){ document.getElementById('settings-overlay').classList.add('open'); }
+function closeSettings(){ document.getElementById('settings-overlay').classList.remove('open'); }
+function toggleReminder(){ document.getElementById('reminder-toggle').classList.toggle('off'); }
+
+/* ─── PHOTO (placeholder) ─────────────────────── */
+let stamps=[];
+function handlePhotoUpload(e){
+  const f=e.target.files[0]; if(!f) return;
+  const fr=new FileReader();
+  fr.onload=ev=>{ addStamp(ev.target.result); };
+  fr.readAsDataURL(f);
+}
+function addStamp(src){
+  const now=new Date();
+  stamps.push({ src, date: now.toLocaleDateString('en-GB',{day:'numeric',month:'short'}) });
+  renderStamps();
+  goTo('page');
+}
+function renderStamps(){
+  const grid=document.getElementById('stamps-grid');
+  const empty=document.getElementById('empty-text');
+  if(stamps.length){
+    empty.style.display='none';
+    grid.style.display='flex';
+    grid.innerHTML=stamps.map((s,i)=>`
+      <div class="stamp-card" style="animation-delay:${i*0.07}s">
+        <img src="${s.src}"><div class="stamp-date">${s.date}</div>
+      </div>`).join('');
+  } else {
+    empty.style.display='';
+    grid.style.display='none';
+  }
+}
+
+
+
+/* ─── EDIT ────────────────────────────────────── */
+const filterConfig = {
+  original:   { label: 'Original',   css: () => '' },
+  contrast:   { label: 'Contrast',   css: (v) => `contrast(${100 + v * 1.5}%)` },
+  brightness: { label: 'Brightness', css: (v) => `brightness(${100 + v}%)` },
+  texture:    { label: 'Texture',    css: (v) => {
+    // grain via CSS — simulate with url() + opacity blend using inline SVG data URI
+    const intensity = Math.abs(v) / 100;
+    if (v === 0) return '';
+    // Use brightness+contrast trick to simulate grain visibility
+    const grainOpacity = intensity * 0.45;
+    return `contrast(${100 + intensity * 15}%) brightness(${100 - intensity * 5}%)`;
+    // actual grain applied separately via applyGrain()
+  }},
+};
+const FILTERS = ['original','contrast','texture','brightness'];
+let currentFilter = 'original';
+let currentFilterIdx = 0;
+let filterValues = { original: 0, contrast: 0, brightness: 0, texture: 0 };
+
+/* ── carousel ── */
+const ICON_W   = 62;   // icon width px
+const ICON_GAP = 14;   // gap px
+const ITEM_W   = ICON_W + ICON_GAP;
+
+function centerFilterRow(idx) {
+  const row = document.getElementById('filter-row');
+  // offset so item[idx] is at center of row
+  // padding = 50% - 31px each side, offset = -idx * ITEM_W
+  row.style.transform = `translateX(${-idx * ITEM_W}px)`;
+}
+
+/* ── ticks drag slider ── */
+const TICK_SPACING = 9.801; // px between ticks in SVG (393/40)
+const TICKS_SVG_W  = 393;
+const PX_PER_UNIT  = TICK_SPACING; // 1 unit = 1 tick gap
+const MAX_VAL      = 100;
+// ticksOffset: how many px the track is shifted right from center=0
+let ticksOffset = 0;
+let dragStartX  = null;
+let dragStartOffset = null;
+let valueHideTimer = null;
+
+function renderTicks() {
+  const track = document.getElementById('ticks-track');
+  const clamped = Math.max(-MAX_VAL * PX_PER_UNIT, Math.min(MAX_VAL * PX_PER_UNIT, ticksOffset));
+  // 3x393px track. Middle copy's center tick (at x=196.5 in copy2) = offset 393+196.5 = 589.5px from start
+  // At offset=0: translate = -589.5 → middle center tick at left=0 of wrap... need to add half wrap width
+  // wrap is 393px wide, so center = 196.5px
+  // to put middle-center-tick at wrap-center: translateX = -(589.5 - 196.5) = -393px
+  // then add ticksOffset: drag left (negative) moves track left → ticks move left → +value
+  track.style.transform = `translateX(${-393 + clamped}px)`;
+
+  // value = -offset / px_per_unit  (drag left = positive)
+  const val = Math.max(-MAX_VAL, Math.min(MAX_VAL, Math.round(-clamped / PX_PER_UNIT)));
+  filterValues[currentFilter] = val;
+  applyFilters();
+
+  // show value bubble
+  const bubble = document.getElementById('ticks-value');
+  bubble.textContent = (val >= 0 ? '+' : '') + val;
+  bubble.classList.add('visible');
+  clearTimeout(valueHideTimer);
+  valueHideTimer = setTimeout(() => bubble.classList.remove('visible'), 1200);
+}
+
+function initCarouselDrag() {
+  const wrap = document.getElementById('filter-row-wrap') || document.querySelector('.filter-row-wrap');
+  if (!wrap) return;
+  let isDragging = false, startX = 0, moved = false;
+  const SWIPE_THRESHOLD = 30;
+
+  function onStart(x) { isDragging = true; startX = x; moved = false; }
+  function onMove(x) {
+    if (!isDragging) return;
+    if (Math.abs(x - startX) > SWIPE_THRESHOLD) moved = true;
+  }
+  function onEnd(x) {
+    if (!isDragging) return;
+    isDragging = false;
+    const dx = x - startX;
+    if (Math.abs(dx) >= SWIPE_THRESHOLD) {
+      // swipe left → next filter, swipe right → prev filter
+      const dir = dx < 0 ? 1 : -1;
+      const newIdx = Math.max(0, Math.min(FILTERS.length - 1, currentFilterIdx + dir));
+      if (newIdx !== currentFilterIdx) {
+        setFilter(FILTERS[newIdx], newIdx);
+      }
+    }
+  }
+
+  wrap.addEventListener('mousedown', e => onStart(e.clientX));
+  document.addEventListener('mousemove', e => { if (isDragging) onMove(e.clientX); });
+  document.addEventListener('mouseup', e => onEnd(e.clientX));
+
+  wrap.addEventListener('touchstart', e => onStart(e.touches[0].clientX), { passive: true });
+  wrap.addEventListener('touchmove', e => onMove(e.touches[0].clientX), { passive: true });
+  wrap.addEventListener('touchend', e => onEnd(e.changedTouches[0].clientX));
+}
+
+function initSliderDrag() {
+  const wrap = document.getElementById('slider-wrap');
+  let isDragging = false;
+
+  function onStart(clientX) {
+    isDragging = true;
+    dragStartX = clientX;
+    dragStartOffset = ticksOffset;
+    document.getElementById('ticks-track').style.transition = 'none';
+  }
+
+  function onMove(clientX) {
+    if (!isDragging) return;
+    const dx = clientX - dragStartX;
+    // LEFT drag (dx < 0) → ticks move left → more ticks to the right visible → value +
+    // RIGHT drag (dx > 0) → ticks move right → value -
+    ticksOffset = Math.max(
+      -MAX_VAL * PX_PER_UNIT,
+      Math.min(MAX_VAL * PX_PER_UNIT, dragStartOffset + dx)
+    );
+    renderTicks();
+  }
+
+  function onEnd() {
+    if (!isDragging) return;
+    isDragging = false;
+    dragStartX = null;
+    document.getElementById('ticks-track').style.transition = '';
+  }
+
+  // Mouse
+  wrap.addEventListener('mousedown', e => { onStart(e.clientX); e.preventDefault(); });
+  document.addEventListener('mousemove', e => onMove(e.clientX));
+  document.addEventListener('mouseup', onEnd);
+
+  // Touch — passive:false so we can preventDefault and stop page scroll
+  wrap.addEventListener('touchstart', e => {
+    onStart(e.touches[0].clientX);
+    e.preventDefault();
+  }, { passive: false });
+
+  wrap.addEventListener('touchmove', e => {
+    onMove(e.touches[0].clientX);
+    e.preventDefault();
+  }, { passive: false });
+
+  wrap.addEventListener('touchend', onEnd);
+  wrap.addEventListener('touchcancel', onEnd);
+}
+
+/* ── set filter ── */
+function setFilter(name, idx) {
+  currentFilter = name;
+  currentFilterIdx = idx;
+  document.getElementById('filter-label').textContent = filterConfig[name].label;
+  document.querySelectorAll('.filter-icon-btn').forEach(b => {
+    const active = b.dataset.filter === name;
+    b.classList.toggle('active', active);
+    b.classList.toggle('inactive', !active);
+  });
+  centerFilterRow(idx);
+
+  // Original: reset ALL filters back to 0
+  if (name === 'original') {
+    filterValues = { original: 0, contrast: 0, brightness: 0, texture: 0 };
+    ticksOffset = 0;
+    applyFilters();
+  } else {
+    ticksOffset = -filterValues[name] * PX_PER_UNIT;
+  }
+  renderTicks();
+}
+
+/* ── apply CSS filters ── */
+function applyFilters() {
+  const img = document.getElementById('edit-img');
+  const grain = document.getElementById('grain-overlay');
+
+  // Standard CSS filters (contrast, brightness)
+  const parts = ['contrast','brightness']
+    .filter(k => filterValues[k] !== 0)
+    .map(k => filterConfig[k].css(filterValues[k]))
+    .filter(Boolean);
+  img.style.filter = parts.join(' ') || 'none';
+
+  // Grain overlay
+  const v = filterValues['texture'];
+  if (grain) {
+    if (v !== 0) {
+      const intensity = Math.abs(v) / 100;
+      grain.style.opacity = intensity * 0.55;
+      grain.style.display = 'block';
+      // direction: positive = warm grain (multiply-ish), negative = cool grain
+      grain.style.mixBlendMode = v > 0 ? 'overlay' : 'soft-light';
+    } else {
+      grain.style.display = 'none';
+    }
+  }
+}
+
+/* ── grain canvas ── */
+function initGrainCanvas() {
+  const canvas = document.getElementById('grain-overlay');
+  if (!canvas) return;
+  const size = 300;
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const imageData = ctx.createImageData(size, size);
+  const data = imageData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const v = Math.random() * 255 | 0;
+    data[i] = v; data[i+1] = v; data[i+2] = v;
+    data[i+3] = 255;
+  }
+  ctx.putImageData(imageData, 0, 0);
+}
+
+/* ── init edit screen ── */
+function goToEdit(dataUrl) {
+  const img = document.getElementById('edit-img');
+  img.src = dataUrl;
+  currentFilter = 'original';
+  currentFilterIdx = 0;
+  filterValues = { original: 0, contrast: 0, brightness: 0, texture: 0 };
+  ticksOffset = 0;
+  document.getElementById('filter-label').textContent = 'Original';
+  document.querySelectorAll('.filter-icon-btn').forEach(b => {
+    const active = b.dataset.filter === 'original';
+    b.classList.toggle('active', active);
+    b.classList.toggle('inactive', !active);
+  });
+  goTo('edit');
+  // wait one frame so DOM is visible before computing positions
+  requestAnimationFrame(() => {
+    centerFilterRow(0);
+    ticksOffset = 0;
+    const track = document.getElementById('ticks-track');
+    track.style.transition = 'none';
+    renderTicks();
+    requestAnimationFrame(() => { track.style.transition = ''; });
+  });
+  applyFilters();
+}
+
+/* ── save ── */
+function saveStampEdit() {
+  const img = document.getElementById('edit-img');
+  const canvas = document.createElement('canvas');
+  canvas.width  = img.naturalWidth  || 500;
+  canvas.height = img.naturalHeight || 500;
+  const ctx = canvas.getContext('2d');
+  const f = img.style.filter;
+  if (f && f !== 'none') ctx.filter = f;
+  ctx.drawImage(img, 0, 0);
+  addStamp(canvas.toDataURL('image/jpeg', 0.92));
+}
+
+/* ─── CAMERA ─────────────────────────────────── */
+let cameraStream = null;
+
+async function goToPhoto() {
+  goTo('photo');
+  await startCamera();
+}
+
+async function startCamera() {
+  const video = document.getElementById('camera-video');
+  const fallback = document.getElementById('cam-fallback');
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 1280 } },
+      audio: false
+    });
+    cameraStream = stream;
+    video.srcObject = stream;
+    video.style.display = 'block';
+    fallback.style.display = 'none';
+  } catch(e) {
+    video.style.display = 'none';
+    fallback.style.display = 'flex';
+    console.warn('Camera error:', e);
+  }
+}
+
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+}
+
+function closePhoto() {
+  stopCamera();
+  goTo('page');
+}
+
+function takePhoto() {
+  const video = document.getElementById('camera-video');
+  const flash = document.getElementById('flash-overlay');
+
+  // Flash animation
+  flash.classList.add('flash');
+  setTimeout(() => flash.classList.remove('flash'), 150);
+
+  // Capture frame
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth || 353;
+  canvas.height = video.videoHeight || 353;
+  const ctx = canvas.getContext('2d');
+
+  if (video.srcObject) {
+    ctx.drawImage(video, 0, 0);
+  } else {
+    // fallback — gray placeholder
+    ctx.fillStyle = '#ccc';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+  stopCamera();
+  goToEdit(dataUrl);
+}
+/* ─── INIT ────────────────────────────────────── */
+window.addEventListener('DOMContentLoaded',()=>{
+  initOvalBtn(document.getElementById('btn-begin'), ()=>goTo('page'));
+  initOvalBtn(document.getElementById('btn-make'),  ()=>goToPhoto());
+  initSliderDrag();
+  initCarouselDrag();
+  initGrainCanvas();
+  boot();
+});
+</script>
+</body>
+</html>
